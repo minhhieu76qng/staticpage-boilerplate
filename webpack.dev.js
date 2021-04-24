@@ -1,4 +1,25 @@
+const path = require('path')
+const fs = require('fs')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
+
+const buildPath = path.resolve(__dirname, 'dist')
+
+const pagesPath = path.resolve(__dirname, 'src', 'pages')
+const pages = fs.readdirSync(pagesPath)
+
+function getEntries () {
+  return pages.reduce((acc, page) => {
+    acc[page] = path.join(pagesPath, page, 'index.js')
+    return acc
+  }, {})
+}
+
+const getHtmlPlugins = () => pages.map((page) => new HtmlWebpackPlugin({
+  template: path.join(pagesPath, page, 'index.html'),
+  inject: 'body',
+  chunks: [page],
+  filename: `${page}.html`
+}))
 
 module.exports = {
 
@@ -7,11 +28,7 @@ module.exports = {
   devtool: 'eval-cheap-module-source-map',
 
   // https://webpack.js.org/concepts/entry-points/#multi-page-application
-  entry: {
-    index: './src/page-index/main.js',
-    about: './src/page-about/main.js',
-    contacts: './src/page-contacts/main.js'
-  },
+  entry: getEntries(),
 
   // https://webpack.js.org/configuration/dev-server/
   devServer: {
@@ -58,23 +75,13 @@ module.exports = {
 
   // https://webpack.js.org/concepts/plugins/
   plugins: [
-    new HtmlWebpackPlugin({
-      template: './src/page-index/tmpl.html',
-      inject: true,
-      chunks: ['index'],
-      filename: 'index.html'
-    }),
-    new HtmlWebpackPlugin({
-      template: './src/page-about/tmpl.html',
-      inject: true,
-      chunks: ['about'],
-      filename: 'about.html'
-    }),
-    new HtmlWebpackPlugin({
-      template: './src/page-contacts/tmpl.html',
-      inject: true,
-      chunks: ['contacts'],
-      filename: 'contacts.html'
-    })
-  ]
+    ...getHtmlPlugins(),
+  ],
+  resolve: {
+    alias: {
+      js: path.resolve(__dirname, 'src/js/'),
+      styles: path.resolve(__dirname, 'src/styles/'),
+      pages: path.resolve(__dirname, 'src/page/')
+    }
+  }
 }
